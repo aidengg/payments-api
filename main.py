@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
 import sqlite3
 
 def get_db():
@@ -50,3 +51,22 @@ def create_account(account: AccountCreate):
             "owner_name": account.owner_name,
             "currency": account.currency,
         }
+
+@app.get("/accounts")
+def list_accounts():
+    conn =get_db()
+    rows = conn.execute("SELECT * FROM accounts").fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.get("/accounts/{account_id}")
+def get_account(account_id: int):
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM accounts WHERE id = ?",
+            (account_id,),
+        ).fetchone()
+    conn.close()
+    if row is None:
+        raise HTTPException(status_code=404, detail= "Account not found")
+    return dict(row)
